@@ -2,7 +2,12 @@ const i18next = require('i18next');
 const Backend = require('i18next-fs-backend');
 const path = require('path');
 const Groq = require('groq-sdk');
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let groq;
+if (process.env.GROQ_API_KEY) {
+    groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+} else {
+    console.error('CRITICAL: GROQ_API_KEY is not defined in environment variables.');
+}
 
 const Loan = require('../models/Loan');
 
@@ -129,6 +134,10 @@ class AIService {
             ...(history || []).map(msg => ({ role: (msg.role === 'assistant' ? 'assistant' : 'user'), content: msg.content })),
             { role: "user", content: text }
         ];
+
+        if (!groq) {
+            throw new Error('AI Service is not configured (missing GROQ_API_KEY)');
+        }
 
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
