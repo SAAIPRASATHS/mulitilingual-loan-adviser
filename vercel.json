@@ -1,12 +1,5 @@
 {
     "version": 2,
-    "functions": {
-        "api/index.js": {
-            "memory": 1024,
-            "maxDuration": 25,
-            "includeFiles": "backend/locales/**"
-        }
-    },
     "rewrites": [
         {
             "source": "/api/:match*",
@@ -17,7 +10,11 @@
             "destination": "/backend/uploads/:match*"
         },
         {
-            "source": "/((?!api|uploads).*)",
+            "source": "/assets/:match*",
+            "destination": "/frontend/dist/assets/:match*"
+        },
+        {
+            "source": "/((?!api|uploads|assets|favicon.ico).*)",
             "destination": "/frontend/dist/index.html"
         }
     ]
