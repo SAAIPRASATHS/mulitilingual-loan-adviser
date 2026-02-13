@@ -10,12 +10,13 @@
             "destination": "/backend/uploads/:match*"
         },
         {
-            "source": "/assets/:match*",
-            "destination": "frontend/dist/assets/:match*"
+            "source": "/(.*)",
+            "destination": "/frontend/dist/$1",
+            "continue": true
         },
         {
-            "source": "/((?!api|uploads|assets|favicon.ico).*)",
-            "destination": "frontend/dist/index.html"
+            "source": "/(.*)",
+            "destination": "/frontend/dist/index.html"
         }
     ]
 }
