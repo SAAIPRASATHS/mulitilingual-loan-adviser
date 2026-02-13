@@ -11,11 +11,11 @@
         },
         {
             "source": "/assets/:match*",
-            "destination": "/frontend/dist/assets/:match*"
+            "destination": "frontend/dist/assets/:match*"
         },
         {
             "source": "/((?!api|uploads|assets|favicon.ico).*)",
-            "destination": "/frontend/dist/index.html"
+            "destination": "frontend/dist/index.html"
         }
     ]
 }

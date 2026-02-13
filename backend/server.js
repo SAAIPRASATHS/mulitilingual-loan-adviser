@@ -8,7 +8,7 @@ const path = require('path');
 dotenv.config();
 
 // Connect to Database
-connectDB();
+connectDB().catch(err => console.error('Database pre-connect failed:', err));
 
 const app = express();
 
