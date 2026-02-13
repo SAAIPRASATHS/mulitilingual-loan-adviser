@@ -13,23 +13,35 @@
             }
         }
     ],
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/(.*)",
-            "destination": "backend/server.js"
+            "src": "/api/(.*)",
+            "dest": "backend/server.js",
+            "methods": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS"
+            ],
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+            }
         },
         {
-            "source": "/uploads/(.*)",
-            "destination": "backend/uploads/$1"
+            "src": "/uploads/(.*)",
+            "dest": "backend/uploads/$1"
         },
         {
-            "source": "/(.*)",
-            "destination": "frontend/$1",
+            "src": "/(.*)",
+            "dest": "frontend/$1",
             "continue": true
         },
         {
-            "source": "/(.*)",
-            "destination": "frontend/index.html"
+            "src": "/(.*)",
+            "dest": "frontend/index.html"
         }
     ]
 }
