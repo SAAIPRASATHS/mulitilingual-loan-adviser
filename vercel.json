@@ -10,7 +10,12 @@
             "destination": "/backend/uploads/:match*"
         },
         {
-            "source": "/((?!api|uploads).*)",
+            "source": "/(.*)",
+            "destination": "/frontend/dist/$1",
+            "continue": true
+        },
+        {
+            "source": "/(.*)",
             "destination": "/frontend/dist/index.html"
         }
     ]
