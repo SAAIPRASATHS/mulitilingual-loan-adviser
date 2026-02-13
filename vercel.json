@@ -1,43 +1,23 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "backend/server.js",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "frontend/package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
+    "functions": {
+        "backend/server.js": {
+            "memory": 1024,
+            "maxDuration": 25
         }
-    ],
-    "routes": [
+    },
+    "rewrites": [
         {
-            "src": "/api/(.*)",
-            "dest": "backend/server.js",
-            "methods": [
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "PATCH",
-                "OPTIONS"
-            ]
+            "source": "/api/:match*",
+            "destination": "backend/server.js"
         },
         {
-            "src": "/uploads/(.*)",
-            "dest": "backend/uploads/$1"
+            "source": "/uploads/:match*",
+            "destination": "backend/uploads/:match*"
         },
         {
-            "src": "/(.*)",
-            "dest": "frontend/$1",
-            "continue": true
-        },
-        {
-            "src": "/(.*)",
-            "dest": "frontend/index.html"
+            "source": "/((?!api|uploads).*)",
+            "destination": "/frontend/dist/index.html"
         }
     ]
 }
