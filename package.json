@@ -1,0 +1,8 @@
+{
+    "name": "loan-advisor-monorepo",
+    "private": true,
+    "workspaces": [
+        "backend",
+        "frontend"
+    ]
+}
