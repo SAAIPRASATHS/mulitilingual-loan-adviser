@@ -1,8 +1,15 @@
 {
     "name": "loan-advisor-monorepo",
+    "version": "1.0.0",
     "private": true,
     "workspaces": [
         "backend",
         "frontend"
-    ]
+    ],
+    "scripts": {
+        "build": "cd frontend && npm install && npm run build",
+        "install-backend": "cd backend && npm install",
+        "start": "cd backend && npm start",
+        "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+    }
 }
