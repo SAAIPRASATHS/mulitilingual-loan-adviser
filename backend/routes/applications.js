@@ -12,14 +12,26 @@ const path = require('path');
 const fs = require('fs');
 
 // Configure multer for file uploads
+const uploadDir = process.env.VERCEL === '1' ? '/tmp' : path.join(__dirname, '../uploads');
+
+// Ensure directory exists
+if (!fs.existsSync(uploadDir)) {
+    try {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    } catch (err) {
+        console.error('Error creating upload directory:', err);
+    }
+}
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+        cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
         cb(null, `${req.user._id}-${Date.now()}${path.extname(file.originalname)}`);
     }
 });
+
 
 const upload = multer({ storage: storage });
 
@@ -119,11 +131,16 @@ router.post('/:id/upload', protect, upload.single('document'), async (req, res) 
             return res.status(404).json({ message: 'Application not found' });
         }
 
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
         application.documents.push({
             documentType: req.body.documentType,
             fileName: req.file.filename,
             filePath: req.file.path
         });
+
 
         await application.save();
         res.json(application);
