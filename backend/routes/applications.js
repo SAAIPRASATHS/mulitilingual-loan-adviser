@@ -3,6 +3,8 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const LoanApplication = require('../models/LoanApplication');
 const Loan = require('../models/Loan');
+const { sendLoanApprovalEmail } = require('../services/emailService');
+
 
 const { protect } = require('../middleware/auth');
 const multer = require('multer');
@@ -73,7 +75,15 @@ router.post('/', protect, async (req, res) => {
             }
         });
 
+        // Send email if approved
+        if (isApproved) {
+            // req.user might not have all details if it's just from protect middleware
+            // but usually it's populated there. 
+            sendLoanApprovalEmail(application, req.user, loanData);
+        }
+
         res.status(201).json(application);
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
