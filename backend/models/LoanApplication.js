@@ -29,7 +29,7 @@ const loanApplicationSchema = new mongoose.Schema({
     },
     purpose: {
         type: String,
-        required: true
+        required: false
     },
     borrowerAge: Number,
     monthlyIncome: Number,
@@ -78,6 +78,18 @@ const loanApplicationSchema = new mongoose.Schema({
             default: Date.now
         }
     }],
+    documentAnalysis: {
+        isAnalyzed: { type: Boolean, default: false },
+        analysisResult: { type: String, enum: ['genuine', 'suspicious', 'inconclusive', null], default: null },
+        analysisDetails: String,
+        analyzedAt: Date
+    },
+    reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    reviewedAt: Date,
+    rejectionReason: String,
     approvedAmount: Number,
     approvedTenure: Number,
     interestRate: Number,

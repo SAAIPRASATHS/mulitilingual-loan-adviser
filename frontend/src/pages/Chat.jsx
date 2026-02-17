@@ -3,14 +3,18 @@ import {
     Box, Container, Paper, TextField, IconButton, Typography, Stack, Avatar,
     Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid
 } from '@mui/material';
-import { Send, Mic, MicOff, MessageSquare } from 'lucide-react';
+import { Send, Mic, MicOff, MessageSquare, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 const Message = ({ content, role, isVoice, onAcceptOffer }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const [translatedContent, setTranslatedContent] = useState('');
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [showTranslation, setShowTranslation] = useState(false);
+
     const isAssistant = role === 'assistant';
     const offerMatch = content.match(/\[\[LOAN_OFFER:(.*?)\]\]/);
     const dataMatch = content.match(/\[\[LOAN_DATA:(.*?)\]\]/);
@@ -30,8 +34,43 @@ const Message = ({ content, role, isVoice, onAcceptOffer }) => {
         console.error("Failed to parse loan data", e);
     }
 
-    const eligibilityStatus = eligibilityMatch ? eligibilityMatch[1] : null; // 'eligible' or 'ineligible'
-    const eligibilityValue = eligibilityMatch ? eligibilityMatch[2] : null; // loanId or reason
+    const eligibilityStatus = eligibilityMatch ? eligibilityMatch[1] : null;
+    const eligibilityValue = eligibilityMatch ? eligibilityMatch[2] : null;
+
+    const handleTranslate = async (targetLangInput = null) => {
+        let targetLang = targetLangInput;
+        if (!targetLang) {
+            // Cycle through: en → hi → ta → en
+            if (i18n.language === 'en') targetLang = 'hi';
+            else if (i18n.language === 'hi') targetLang = 'ta';
+            else targetLang = 'en';
+        }
+
+        if (showTranslation && translatedContent && translatedContent.lang === targetLang) {
+            setShowTranslation(false);
+            return;
+        }
+
+        if (translatedContent && translatedContent.lang === targetLang) {
+            setShowTranslation(true);
+            return;
+        }
+
+        setIsTranslating(true);
+        try {
+            const { data } = await api.post('/chat/translate', {
+                text: displayContent,
+                targetLang: targetLang
+            });
+            setTranslatedContent({ text: data.translatedText, lang: targetLang });
+            setShowTranslation(true);
+        } catch (err) {
+            console.error('Translation failed', err);
+            alert("Translation failed. Please try again.");
+        } finally {
+            setIsTranslating(false);
+        }
+    };
 
     return (
         <Box sx={{
@@ -39,57 +78,130 @@ const Message = ({ content, role, isVoice, onAcceptOffer }) => {
             justifyContent: isAssistant ? 'flex-start' : 'flex-end',
             mb: 2
         }}>
-            <Stack direction={isAssistant ? 'row' : 'row-reverse'} spacing={1} alignItems="flex-end">
-                <Avatar sx={{ bgcolor: isAssistant ? 'primary.main' : 'secondary.main', width: 32, height: 32 }}>
+            <Stack direction={isAssistant ? 'row' : 'row-reverse'} spacing={1} alignItems="flex-start">
+                <Avatar sx={{ bgcolor: isAssistant ? 'primary.main' : 'secondary.main', width: 32, height: 32, mt: 1 }}>
                     {isAssistant ? 'A' : 'U'}
                 </Avatar>
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 2,
-                        maxWidth: '80%',
-                        borderRadius: isAssistant ? '20px 20px 20px 4px' : '20px 20px 4px 20px',
-                        bgcolor: isAssistant ? 'white' : 'primary.main',
-                        color: isAssistant ? 'text.primary' : 'white',
-                        border: isAssistant ? '1px solid #e0e0e0' : 'none'
-                    }}
-                >
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>{displayContent}</Typography>
+                <Box sx={{ maxWidth: '80%', display: 'flex', flexDirection: 'column', alignItems: isAssistant ? 'flex-start' : 'flex-end' }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 2,
+                            borderRadius: isAssistant ? '20px 20px 20px 4px' : '20px 20px 4px 20px',
+                            bgcolor: isAssistant ? 'white' : 'primary.main',
+                            color: isAssistant ? 'text.primary' : 'white',
+                            border: isAssistant ? '1px solid #e0e0e0' : 'none',
+                            position: 'relative'
+                        }}
+                    >
+                        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                            {showTranslation ? translatedContent.text : displayContent}
+                        </Typography>
 
-                    {eligibilityStatus === 'eligible' && (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'success.light', color: 'white', borderRadius: 2 }}>
-                            <Typography variant="subtitle2" fontWeight="700">{t('chat.eligible_title')}</Typography>
+                        {eligibilityStatus === 'eligible' && (
+                            <Box sx={{ mt: 2, p: 2, bgcolor: 'success.light', color: 'white', borderRadius: 2 }}>
+                                <Typography variant="subtitle2" fontWeight="700">{t('chat.eligible_title')}</Typography>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    size="small"
+                                    sx={{ mt: 1, bgcolor: 'white', color: 'success.main', '&:hover': { bgcolor: '#f0f0f0' } }}
+                                    onClick={() => onAcceptOffer(eligibilityValue, loanData)}
+                                >
+                                    {t('chat.accept_apply')}
+                                </Button>
+                            </Box>
+                        )}
+
+                        {eligibilityStatus === 'ineligible' && (
+                            <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', color: 'white', borderRadius: 2 }}>
+                                <Typography variant="subtitle2" fontWeight="700">{t('chat.ineligible_title')}</Typography>
+                                <Typography variant="body2">{eligibilityValue}</Typography>
+                            </Box>
+                        )}
+
+                        {loanId && !eligibilityStatus && (
                             <Button
                                 variant="contained"
                                 color="success"
                                 size="small"
-                                sx={{ mt: 1, bgcolor: 'white', color: 'success.main', '&:hover': { bgcolor: '#f0f0f0' } }}
-                                onClick={() => onAcceptOffer(eligibilityValue, loanData)}
+                                sx={{ mt: 2, borderRadius: 2 }}
+                                onClick={() => onAcceptOffer(loanId, loanData)}
                             >
                                 {t('chat.accept_apply')}
                             </Button>
-                        </Box>
-                    )}
+                        )}
+                    </Paper>
 
-                    {eligibilityStatus === 'ineligible' && (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'error.light', color: 'white', borderRadius: 2 }}>
-                            <Typography variant="subtitle2" fontWeight="700">{t('chat.ineligible_title')}</Typography>
-                            <Typography variant="body2">{eligibilityValue}</Typography>
-                        </Box>
-                    )}
-
-                    {loanId && !eligibilityStatus && (
-                        <Button
-                            variant="contained"
-                            color="success"
+                    <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                        <IconButton
                             size="small"
-                            sx={{ mt: 2, borderRadius: 2 }}
-                            onClick={() => onAcceptOffer(loanId, loanData)}
+                            onClick={() => handleTranslate()}
+                            disabled={isTranslating}
+                            sx={{
+                                opacity: 0.6,
+                                '&:hover': { opacity: 1, bgcolor: 'rgba(0,0,0,0.05)' },
+                                color: (showTranslation && translatedContent && translatedContent.lang !== 'en') ? 'primary.main' : 'inherit'
+                            }}
+                            title="Translate"
                         >
-                            {t('chat.accept_apply')}
+                            <Languages size={16} />
+                        </IconButton>
+
+                        <Button
+                            size="small"
+                            onClick={() => handleTranslate('en')}
+                            disabled={isTranslating}
+                            sx={{
+                                minWidth: 'auto',
+                                px: 1,
+                                py: 0,
+                                fontSize: '0.7rem',
+                                color: (showTranslation && translatedContent && translatedContent.lang === 'en') ? 'primary.main' : 'text.secondary',
+                                opacity: 0.7,
+                                '&:hover': { opacity: 1 }
+                            }}
+                        >
+                            English
                         </Button>
-                    )}
-                </Paper>
+
+                        <Button
+                            size="small"
+                            onClick={() => handleTranslate('hi')}
+                            disabled={isTranslating}
+                            sx={{
+                                minWidth: 'auto',
+                                px: 1,
+                                py: 0,
+                                fontSize: '0.7rem',
+                                color: (showTranslation && translatedContent && translatedContent.lang === 'hi') ? 'primary.main' : 'text.secondary',
+                                opacity: 0.7,
+                                '&:hover': { opacity: 1 }
+                            }}
+                        >
+                            हिंदी
+                        </Button>
+
+                        <Button
+                            size="small"
+                            onClick={() => handleTranslate('ta')}
+                            disabled={isTranslating}
+                            sx={{
+                                minWidth: 'auto',
+                                px: 1,
+                                py: 0,
+                                fontSize: '0.7rem',
+                                color: (showTranslation && translatedContent && translatedContent.lang === 'ta') ? 'primary.main' : 'text.secondary',
+                                opacity: 0.7,
+                                '&:hover': { opacity: 1 }
+                            }}
+                        >
+                            தமிழ்
+                        </Button>
+
+                        {isTranslating && <Typography variant="caption" sx={{ mt: 0.5 }}>...</Typography>}
+                    </Stack>
+                </Box>
             </Stack>
         </Box>
     );

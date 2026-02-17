@@ -82,7 +82,7 @@ function AppRoutes() {
       <Route
         path="/agent/dashboard"
         element={
-          <PrivateRoute roles={['agent']}>
+          <PrivateRoute roles={['agent', 'admin']}>
             <AgentDashboard />
           </PrivateRoute>
         }
@@ -143,7 +143,7 @@ function App() {
 
 function DashboardRedirect() {
   const { user } = useAuth();
-  if (user?.role === 'agent') return <Navigate to="/agent/dashboard" />;
+  if (user?.role === 'agent' || user?.role === 'admin') return <Navigate to="/agent/dashboard" />;
   return <Dashboard />;
 }
 

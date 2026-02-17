@@ -30,7 +30,13 @@ const Login = ({ role: initialRole }) => {
             const endpoint = isLogin ? '/auth/login' : '/auth/register';
             const { data } = await api.post(endpoint, formData);
             login(data);
-            navigate('/dashboard');
+
+            // Redirect based on role
+            if (data.role === 'agent' || data.role === 'admin') {
+                navigate('/agent/dashboard');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Something went wrong');
         } finally {

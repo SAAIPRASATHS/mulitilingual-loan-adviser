@@ -61,6 +61,26 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
+/**
+ * @desc    Translate a message
+ * @route   POST /api/chat/translate
+ * @access  Private
+ */
+router.post('/translate', protect, async (req, res) => {
+    try {
+        const { text, targetLang } = req.body;
+        if (!text || !targetLang) {
+            return res.status(400).json({ message: 'Text and targetLang are required' });
+        }
+
+        const translatedText = await aiService.translateText(text, targetLang);
+        res.json({ translatedText });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+
 // @desc    Get chat history
 // @route   GET /api/chat/history
 // @access  Private

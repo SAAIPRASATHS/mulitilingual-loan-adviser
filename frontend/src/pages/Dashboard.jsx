@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
     Container, Grid, Typography, Box, Paper, Button, Stack, Card, CardContent, Chip,
     Skeleton, Modal, CircularProgress, Divider, List, ListItem, ListItemIcon, ListItemText,
-    IconButton
+    IconButton, Alert
 } from '@mui/material';
 import { Plus, CheckCircle, Clock, AlertCircle, FileText, X, Check, Info, TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import LoanProductCard from '../components/LoanProductCard';
 
 const Dashboard = () => {
@@ -21,6 +22,7 @@ const Dashboard = () => {
     const [checkingEligibility, setCheckingEligibility] = useState(false);
     const [showModal, setShowModal] = useState(false);
 
+    const { user } = useAuth();
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
 
@@ -81,6 +83,25 @@ const Dashboard = () => {
 
     return (
         <Container maxWidth="lg" sx={{ py: 6 }}>
+            {(user?.role === 'admin' || user?.role === 'agent') && (
+                <Alert
+                    severity="info"
+                    variant="outlined"
+                    sx={{ mb: 4, borderRadius: 3, bgcolor: 'rgba(25, 118, 210, 0.04)', borderColor: 'primary.light' }}
+                    action={
+                        <Button color="primary" size="small" component={RouterLink} to="/agent/dashboard" sx={{ fontWeight: 700 }}>
+                            Go to Admin Portal
+                        </Button>
+                    }
+                >
+                    <Typography variant="body2" fontWeight="600">
+                        {user.role === 'admin' ? 'You are logged in as an Administrator.' : 'You are logged in as a Loan Agent.'}
+                    </Typography>
+                    <Typography variant="caption">
+                        You can access the review workspace to manage loan applications.
+                    </Typography>
+                </Alert>
+            )}
             <Typography variant="h4" fontWeight="800" sx={{ mb: 4 }}>
                 {t('dashboard.welcome')}
             </Typography>

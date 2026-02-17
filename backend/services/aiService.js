@@ -38,13 +38,17 @@ class AIService {
         let response = "";
         let nextIntent = context.currentIntent;
 
-        // Change language if requested
-        if (i18next.language !== lang) {
-            await i18next.changeLanguage(lang);
+        // Detect script
+        const detectedLang = this.detectScript(text);
+        const activeLang = detectedLang !== 'en' ? detectedLang : lang;
+
+        // Change language if requested or detected
+        if (i18next.language !== activeLang) {
+            await i18next.changeLanguage(activeLang);
         }
 
         try {
-            const groqResponse = await this.getGroqResponse(text, lang, history, context);
+            const groqResponse = await this.getGroqResponse(text, activeLang, history, context);
             return groqResponse;
         } catch (error) {
             console.error("Groq Error:", error.message);
@@ -99,14 +103,23 @@ class AIService {
         }).join('\n');
 
         const systemPrompt = `You are a helpful and professional Loan Advisor for "LoanAdvisor".
-        User language: ${lang}.
-        
-        LANGUAGE RULES:
-        1. If lang is 'ta' (Tamil), use "Tunglish" style: Natural Tamil mixed with common English loan-related terms (e.g., "Home Loan apply panna", "Interest Rate evvalavu?").
-        2. If lang is 'hi' (Hindi), use "Hinglish" style: Natural Hindi mixed with common English loan-related terms (e.g., "aapka Credit Score kya hai?", "Personal Loan options dekhiye").
-        3. If lang is 'en' (English), use clear and professional English.
-        4. ALWAYS use English for technical terms: Loan IDs, Statuses, Document names (Identity Proof, Address Proof), and specific loan names (Personal Loan, Vehicle Loan) to ensure clarity.
-        5. Match the user's tone and complexity.
+        Interface Language: ${lang}.
+
+        CRITICAL SCRIPT RULE:
+        - If the user writes in Tamil script (e.g., வணக்கம்), YOU MUST RESPOND IN TAMIL SCRIPT.
+        - If the user writes in Hindi script (e.g., नमस्ते), YOU MUST RESPOND IN HINDI SCRIPT.
+        - If the user writes in English, respond in English.
+
+        DYNAMIC LANGUAGE ADAPTATION:
+        1. "Tamil Script": Use natural Tamil script. You can mix common English loan terms in English script if they are better understood, but keep the core message in Tamil script.
+        2. "Hindi Script": Use natural Hindi script. You can mix common English loan terms in English script if they are better understood, but keep the core message in Hindi script.
+        3. "Tunglish" (Input in English but intent is Tamil): Use Natural Tamil mixed with English loan terms (e.g., "Interest rate evvalavu?").
+        4. "Hinglish" (Input in English but intent is Hindi): Use Natural Hindi mixed with English loan terms (e.g., "Aapka income kitna hai?").
+
+        GENERAL RULES:
+        1. ALWAYS use English for technical terms: Loan IDs, Statuses, Document names (Identity Proof, Address Proof), and specific loan names (Personal Loan, Vehicle Loan).
+        2. Match the user's tone and complexity.
+        3. Respond in the language/script used by the user in their most recent message.
         
         GOAL: Collect details concisely and check eligibility.
         
@@ -156,6 +169,39 @@ class AIService {
                 currentIntent: "ai_handled"
             }
         };
+    }
+
+    async translateText(text, targetLang) {
+        const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+        const systemPrompt = `Translate the following text into ${targetLang}. 
+        Return ONLY the translated text without any explanations, quotes, or additional notes.
+        If targetLang is 'ta', use Tamil script.
+        If targetLang is 'hi', use Hindi script.`;
+
+        if (!groq) {
+            throw new Error('AI Service is not configured (missing GROQ_API_KEY)');
+        }
+
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: text }
+            ],
+            model: model,
+            temperature: 0.3,
+            max_tokens: 1024
+        });
+
+        return chatCompletion.choices[0].message.content.trim();
+    }
+
+    detectScript(text) {
+        const tamilRegex = /[\u0B80-\u0BFF]/;
+        const hindiRegex = /[\u0900-\u097F]/;
+
+        if (tamilRegex.test(text)) return 'ta';
+        if (hindiRegex.test(text)) return 'hi';
+        return 'en';
     }
 }
 

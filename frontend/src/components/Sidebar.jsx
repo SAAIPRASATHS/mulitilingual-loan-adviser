@@ -9,14 +9,16 @@ import {
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar = ({ open, onClose }) => {
     const { t } = useTranslation();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
     const menuItems = [
-        { text: t('nav.dashboard'), icon: <LayoutDashboard size={22} />, path: '/dashboard' },
+        { text: t('nav.dashboard'), icon: <LayoutDashboard size={22} />, path: (user?.role === 'agent' || user?.role === 'admin') ? '/agent/dashboard' : '/dashboard' },
         { text: t('nav.emi_calculator'), icon: <Calculator size={22} />, path: '/emi-calculator' },
         { text: t('nav.chat_advisor'), icon: <MessageSquare size={22} />, path: '/chat' },
         { text: t('nav.financial_education'), icon: <GraduationCap size={22} />, path: '/education' },

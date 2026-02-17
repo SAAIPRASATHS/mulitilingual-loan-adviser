@@ -84,7 +84,9 @@ const Header = ({ onMenuClick }) => {
                                 gap: 1
                             }}
                         >
-                            {user?.role === 'agent' ? t('nav.agent_portal') : t('nav.loan_advisor')}
+                            {(user?.role === 'agent' || user?.role === 'admin')
+                                ? (user?.role === 'admin' ? 'Admin Portal' : t('nav.agent_portal'))
+                                : t('nav.loan_advisor')}
                         </Typography>
                         {isChatPage && (
                             <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>

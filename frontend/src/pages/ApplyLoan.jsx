@@ -80,10 +80,13 @@ const ApplyLoan = () => {
         setError('');
         try {
             // 1. Create Application
-            const { data: application } = await api.post('/applications', {
+            const submissionData = {
                 loanId,
-                ...formData
-            });
+                ...formData,
+                purpose: formData.purpose || t('apply.purpose_default') || 'Loan Application'
+            };
+
+            const { data: application } = await api.post('/applications', submissionData);
 
             const applicationId = application._id;
 

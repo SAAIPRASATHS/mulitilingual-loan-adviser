@@ -56,14 +56,11 @@ router.post('/', protect, async (req, res) => {
             return res.status(404).json({ message: 'Loan product not found' });
         }
 
-        // Automatic Approval Logic
+        // Calculate eligibility for agent reference (NO auto-approval)
         const crit = loanData.eligibilityCriteria;
         const ageValid = borrowerAge >= crit.minAge && (crit.maxAge ? borrowerAge <= crit.maxAge : true);
         const incomeValid = monthlyIncome >= crit.minIncome;
         const creditValid = creditScore >= (crit.minCreditScore || 0);
-        const docsValid = requirementsMet && requirementsMet.identityVerified && requirementsMet.incomeVerified;
-
-        const isApproved = ageValid && incomeValid && creditValid && docsValid;
 
         const application = await LoanApplication.create({
             user: req.user._id,
@@ -77,22 +74,15 @@ router.post('/', protect, async (req, res) => {
             hasCollateral,
             collateralDetails,
             requirementsMet,
-            status: isApproved ? 'approved' : 'submitted',
+            status: 'submitted', // Always submitted — agent must review
             eligibilityDetails: {
                 ageEligible: ageValid,
                 incomeEligible: incomeValid,
                 creditScoreEligible: creditValid,
-                employmentEligible: true, // Simplified for now
+                employmentEligible: true,
                 existingLoansEligible: true
             }
         });
-
-        // Send email if approved
-        if (isApproved) {
-            // req.user might not have all details if it's just from protect middleware
-            // but usually it's populated there. 
-            sendLoanApprovalEmail(application, req.user, loanData);
-        }
 
         res.status(201).json(application);
 
